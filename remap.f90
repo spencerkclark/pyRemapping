@@ -1,5 +1,6 @@
 module remap_mod
 
+  use, intrinsic :: ieee_arithmetic, only: ieee_is_nan, ieee_quiet_nan, ieee_value
   use MOM_remapping, only : remapping_CS
   use MOM_remapping, only : initialize_remapping
   use MOM_remapping, only : remapping_core_h
@@ -53,7 +54,13 @@ contains
         do k=1,nz2
           h1(k)=zo(i,j,k)-zo(i,j,k+1)
         enddo
-        call remapping_core_h(CS, nz,h0,u0,nz2,h1,u1)
+          if (all(ieee_is_nan(h0))) then
+            ! Skip remapping and fill output column with NaN values if the input
+            ! column levels are all NaN.
+          u1 = ieee_value(u1, ieee_quiet_nan)
+          else
+            call remapping_core_h(CS, nz,h0,u0,nz2,h1,u1)
+          endif
         do k=1,nz2
           remap(i,j,k)=u1(k)
         enddo
